@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>سيستم أكاديمية - PRO</title>
+<style>
+*{box-sizing:border-box;font-family:Tahoma;margin:0;padding:0;}
+body{background:#f2f4f7;}
+.login{height:100vh;display:flex;justify-content:center;align-items:center;}
+.login-box{background:#fff;padding:30px;width:350px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.15);}
+.login-box h2{text-align:center;margin-bottom:20px;}
+.login-box input{width:100%;padding:10px;margin-bottom:15px;border:1px solid #ccc;border-radius:6px;}
+.login-box button{width:100%;padding:10px;background:#007bff;border:none;color:#fff;border-radius:6px;cursor:pointer;}
+.app{display:none;padding:20px;}
+.header{display:flex;justify-content:space-between;align-items:center;}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:20px 0;}
+.stat{background:#fff;padding:20px;border-radius:10px;text-align:center;}
+.stat p{font-size:26px;margin:0;}
+.container{background:#fff;padding:20px;border-radius:10px;display:flex;flex-direction:column;height:calc(100vh - 150px);}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;align-items:end;margin-bottom:10px;}
+.form-grid label,.form-bottom label{display:block;margin-bottom:5px;font-weight:bold;}
+.form-grid input,.form-grid select,.form-bottom input{padding:10px;border:1px solid #ccc;border-radius:6px;width:100%;}
+.form-bottom{margin-bottom:10px;}
+.actions{margin:10px 0;display:flex;gap:10px;flex-wrap:wrap;}
+.save{background:#28a745;color:#fff;}
+.delete-all{background:#ef4444;color:#fff;}
+button{padding:10px 20px;border:none;border-radius:6px;cursor:pointer;}
+.top-bar{display:flex;justify-content:flex-start;margin-bottom:10px;gap:10px;flex-wrap:wrap;}
+.top-bar input{padding:10px;width:250px;}
+.filter-status{padding:10px;border:1px solid #ccc;border-radius:6px;}
+.table-wrapper{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;table-layout:fixed;}
+thead{position:sticky;top:0;background:#1f2937;color:#fff;z-index:2;}
+th,td{padding:12px;font-size:14px;border:1px solid #ddd;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+tbody tr:nth-child(even){background:#f9fafb;}
+tbody tr:hover{background:#dbeafe;}
+.status{padding:4px 8px;border-radius:6px;font-size:12px;font-weight:bold;}
+.status.expired{background:#fee2e2;color:#991b1b;}
+.status.near{background:#fef3c7;color:#92400e;}
+td.start-end{background:#e0f7fa;font-weight:bold;}
+td.near-end{background:#fff9c4;}
+.edit{background:#facc15;border:none;padding:5px 8px;border-radius:5px;cursor:pointer;}
+.delete{background:#ef4444;color:#fff;border:none;padding:5px 8px;border-radius:5px;}
+.actions-col{display:flex;justify-content:center;gap:5px;}
+th:nth-child(1), td:nth-child(1){width:150px;}
+th:nth-child(2), td:nth-child(2){width:50px;}
+th:nth-child(3), td:nth-child(3){width:120px;}
+th:nth-child(4), td:nth-child(4){width:100px;}
+th:nth-child(5), td:nth-child(5){width:100px;}
+th:nth-child(6), td:nth-child(6){width:120px;}
+th:nth-child(7), td:nth-child(7){width:80px;}
+th:nth-child(8), td:nth-child(8){width:100px;}
+th:nth-child(9), td:nth-child(9){width:100px;}
+
+/* رسائل كبيرة فوق الفورم */
+#saveMessage,#errorMessage,#infoMessage{
+  display:none;
+  padding:15px;
+  margin-bottom:15px;
+  border-radius:8px;
+  font-weight:bold;
+  font-size:18px;
+  text-align:center;
+  box-shadow:0 4px 8px rgba(0,0,0,0.2);
+}
+#saveMessage{background:#4ade80;color:#065f46;}
+#errorMessage{background:#f87171;color:#7f1d1d;}
+#infoMessage{background:#60a5fa;color:#1e40af;}
+</style>
+</head>
+<body>
+
+<div class="login" id="loginScreen">
+  <div class="login-box">
+    <h2>تسجيل الدخول</h2>
+    <input id="user" placeholder="اسم المستخدم" />
+    <input id="pass" type="password" placeholder="كلمة المرور" />
+    <button onclick="doLogin()">دخول</button>
+  </div>
+</div>
+
+<div class="app" id="appScreen">
+  <div class="header">
+    <h2>لوحة التحكم</h2>
+    <button onclick="logout()">خروج</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">الإجمالي<p id="total">0</p></div>
+    <div class="stat">منتهية<p id="expired">0</p></div>
+    <div class="stat">قرب يخلص<p id="near">0</p></div>
+  </div>
+
+  <div class="container">
+
+    <!-- رسائل فوق الفورم -->
+    <div id="saveMessage">✅ تم حفظ البيانات بنجاح!</div>
+    <div id="errorMessage">⚠️ املا كل البيانات قبل الحفظ!</div>
+    <div id="infoMessage">ℹ️ جاري المعالجة...</div>
+
+    <div class="form-grid">
+      <div><label>اسم المشترك</label><input id="memberName" placeholder="اسم المشترك" /></div>
+      <div><label>العمر</label><input id="age" type="number" placeholder="العمر" /></div>
+      <div><label>رقم الهاتف</label><input id="phone" placeholder="رقم الهاتف" /></div>
+      <div><label>بداية الاشتراك</label><input id="startDate" type="date" /></div>
+      <div><label>نهاية الاشتراك</label><input id="endDate" type="date" /></div>
+      <div><label>الرياضة</label><select id="sport"><option value="">الرياضة</option></select></div>
+    </div>
+
+    <div class="form-bottom">
+      <label>المبلغ المدفوع (ر.س)</label>
+      <input id="amount" type="number" step="0.01" />
+    </div>
+
+    <div class="actions">
+      <button class="save" onclick="saveMember()">حفظ</button>
+      <button class="delete-all" onclick="deleteAll()">🗑️ مسح جميع المشتركين</button>
+      <input type="file" id="importCSV" accept=".csv" onchange="importCSV(event)" style="padding:10px;border:1px solid #ccc;border-radius:6px"/>
+    </div>
+
+    <div class="top-bar">
+      <input id="search" placeholder="بحث بالاسم أو رقم الهاتف..." onkeyup="renderTable()" />
+      <select id="filterStatus" class="filter-status" onchange="renderTable()">
+        <option value="all">كل الحالات</option>
+        <option value="ساري">ساري</option>
+        <option value="قرب يخلص">قرب يخلص</option>
+        <option value="منتهي">منتهي</option>
+      </select>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>الاسم</th><th>العمر</th><th>الهاتف</th><th>بداية الاشتراك</th><th>نهاية الاشتراك</th><th>الرياضة</th><th>المبلغ المدفوع (ر.س)</th><th>الحالة</th><th>تحكم</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const loginScreen=document.getElementById("loginScreen");
+const appScreen=document.getElementById("appScreen");
+const tableBody=document.getElementById("tableBody");
+const search=document.getElementById("search");
+const filterStatus=document.getElementById("filterStatus");
+const total=document.getElementById("total");
+const expired=document.getElementById("expired");
+const near=document.getElementById("near");
+const sportSelect=document.getElementById("sport");
+const saveMessage=document.getElementById("saveMessage");
+const errorMessage=document.getElementById("errorMessage");
+const infoMessage=document.getElementById("infoMessage");
+
+let data=JSON.parse(localStorage.getItem("academyData")||"[]");
+let editIndex=null;
+const sports=["سباحة","جمباز","كرة قدم","كاراتيه"];
+
+function getCombinations(array){
+  const result=[];
+  const f=(prefix,arr)=>{for(let i=0;i<arr.length;i++){const combo=[...prefix,arr[i]];result.push(combo);f(combo,arr.slice(i+1));}};f([],array);return result;
+}
+getCombinations(sports).forEach(c=>{
+  const opt=document.createElement("option");
+  opt.value=c.join(" - "); opt.textContent=c.join(" - "); sportSelect.appendChild(opt);
+});
+
+function formatDate(d){if(!d)return"";let dt=new Date(d);if(isNaN(dt))return d;return`${String(dt.getDate()).padStart(2,"0")}/${String(dt.getMonth()+1).padStart(2,"0")}/${dt.getFullYear()}`;}
+function doLogin(){if(user.value==="admin"&&pass.value==="1234"){loginScreen.style.display="none";appScreen.style.display="block";renderTable();}else alert("بيانات خطأ");}
+function logout(){appScreen.style.display="none";loginScreen.style.display="flex";}
+
+function showMessage(msgDiv){
+  msgDiv.style.display="block";
+  setTimeout(()=>{msgDiv.style.display="none";},4000);
+}
+
+function saveMember(){
+  const member = {name:memberName.value,age:age.value,phone:phone.value,start:startDate.value,end:endDate.value,sport:sport.value,amount:amount.value};
+  if(Object.values(member).includes("")){
+    showMessage(errorMessage); return;
+  }
+  if(editIndex === null) data.push(member); else {data[editIndex]=member; editIndex=null;}
+  localStorage.setItem("academyData",JSON.stringify(data));
+  updateCSV(); renderTable(); resetForm(); exportCSV();
+  showMessage(saveMessage);
+}
+
+function editMember(i){const m=data[i];memberName.value=m.name;age.value=m.age;phone.value=m.phone;startDate.value=m.start;endDate.value=m.end;sport.value=m.sport;amount.value=m.amount;editIndex=i;}
+function deleteMember(i){if(confirm("متأكد من الحذف؟")){data.splice(i,1);localStorage.setItem("academyData",JSON.stringify(data));updateCSV();renderTable();exportCSV(); showMessage(infoMessage); infoMessage.textContent="✅ تم حذف المشترك!";}}
+function deleteAll(){if(data.length===0){alert("لا توجد بيانات للحذف!");return;}if(confirm("⚠️ هل أنت متأكد من مسح جميع المشتركين؟")){data=[];localStorage.setItem("academyData",JSON.stringify(data));updateCSV();renderTable();exportCSV(); showMessage(infoMessage); infoMessage.textContent="✅ تم مسح جميع المشتركين!";}}
+function resetForm(){memberName.value="";age.value="";phone.value="";startDate.value="";endDate.value="";sport.value="";amount.value="";editIndex=null;}
+
+function renderTable(){
+  const q=search.value?.toLowerCase()||"";
+  const filter=filterStatus.value;
+  let exp=0,nearExp=0;
+  const frag=document.createDocumentFragment();
+  data.forEach((m,i)=>{
+    const name=m.name||"-",phone=m.phone||"-",start=formatDate(m.start),end=formatDate(m.end),sport=m.sport||"-",amt=m.amount||"0";
+    if(!name.toLowerCase().includes(q)&&!phone.includes(q)) return;
+    let status="ساري",rowClass="";
+    if(end!==""){const [dd,mm,yyyy]=end.split("/");const days=(new Date(`${yyyy}-${mm}-${dd}`)-new Date())/86400000;if(days<0){status="منتهي";exp++;rowClass="expired";}else if(days<=7){status="قرب يخلص";nearExp++;rowClass="near-end";}}
+    if(filter!=="all"&&status!==filter) return;
+    const statusHTML=status==="ساري"?"ساري":status==="منتهي"?`<span class='status expired'>منتهي</span>`:`<span class='status near'>قرب يخلص</span>`;
+    const tr=document.createElement("tr");tr.className=rowClass;
+    tr.innerHTML=`<td>${name}</td><td>${m.age||"-"}</td><td>${phone}</td><td class="start-end">${start}</td><td class="start-end">${end}</td><td>${sport}</td><td>${amt}</td><td>${statusHTML}</td><td class="actions-col"><button class="edit" onclick="editMember(${i})">✏️</button><button class="delete" onclick="deleteMember(${i})">🗑️</button></td>`;
+    frag.appendChild(tr);
+  });
+  tableBody.innerHTML="";tableBody.appendChild(frag);
+  total.textContent=data.length;expired.textContent=exp;near.textContent=nearExp;
+}
+
+function updateCSV(){if(data.length===0){localStorage.removeItem("academyCSV");return;}let csv="الاسم,العمر,الهاتف,بداية,نهاية,الرياضة,المبلغ المدفوع (ر.س)\n";data.forEach(m=>{csv+=`"${m.name}","${m.age}","${m.phone}","${m.start}","${m.end}","${m.sport}","${m.amount}"\n`;});localStorage.setItem("academyCSV",csv);}
+function exportCSV(){
+  let csv=localStorage.getItem("academyCSV")||"";if(csv==="")return;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}));
+  a.download="academy.csv";
+  a.click();
+  showMessage(infoMessage); infoMessage.textContent="✅ تم تصدير الملف بنجاح!";
+}
+function importCSV(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  showMessage(infoMessage); infoMessage.textContent="ℹ️ جاري استيراد الملف...";
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const rows=ev.target.result.split(/\r?\n/).filter(r=>r.trim()!=="");
+    rows.slice(1).forEach(r=>{
+      const c=r.split(",");
+      if(c.length>=7)data.push({name:c[0].replace(/"/g,""),age:c[1].replace(/"/g,""),phone:c[2].replace(/"/g,""),start:c[3].replace(/"/g,""),end:c[4].replace(/"/g,""),sport:c[5].replace(/"/g,""),amount:c[6].replace(/"/g,"")});
+    });
+    localStorage.setItem("academyData",JSON.stringify(data));
+    updateCSV(); renderTable(); exportCSV();
+    showMessage(infoMessage); infoMessage.textContent="✅ تم استيراد الملف بنجاح!";
+    e.target.value="";
+  };
+  reader.readAsText(file,"UTF-8");
+}
+
+renderTable();
+</script>
+</body>
+</html>
